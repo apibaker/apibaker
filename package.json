@@ -1,0 +1,22 @@
+{
+  "name": "apibaker",
+  "version": "1.0.0",
+  "description": "apibaker runtime javascript library",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apibaker/apibaker.git"
+  },
+  "keywords": [
+    "apibaker"
+  ],
+  "author": "apibaker@outlook.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/apibaker/apibaker/issues"
+  },
+  "homepage": "https://github.com/apibaker/apibaker#readme"
+}
