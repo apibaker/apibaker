@@ -25,11 +25,12 @@ var prepareInput = function(param, actionType, entName, refeEntName) {
   if(param.size) {
     input.size = param.size;
   }
-
   if(actionType==("QueryRef") || actionType==("CountRef") || actionType==("ExistRef")
             || actionType==("QueryRefCandidate") || actionType==("CountRefCandidate")
             || actionType==("ExistRefCandidate")) {
     input.obj[refeEntName+'Id'] = param.id || 0;
+  } else if(actionType=="Query" && param.id) {
+    input.obj[entName+'Id_1'] = param.id || 0;
   } else {
     input.obj[entName+'Id'] = param.id || 0;
   }
@@ -266,6 +267,7 @@ function setSQLParam (params, map) {
     } else if(opt === 'Contains') {
       sqlparam[idx]='%'+pval+'%';
     } else {
+
       sqlparam[idx]=pval;
       if(typeof(sqlparam[idx])=='undefined' || sqlparam[idx]==""){
         sqlparam[idx]=null;
