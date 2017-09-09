@@ -1,18 +1,11 @@
 var pg = require('pg');
 
+
 // create a config to configure both pooling behavior
 // and client options
 // note: all config is optional and the environment variables
 // will be read if the config is not present
-var config = {
-    //host:"192.168.33.10",
-  user: 'postgres', //env var: PGUSER
-  database: 'cloudappbox', //env var: PGDATABASE
-  password: 'postgres', //env var: PGPASSWORD
-  port: 5433, //env var: PGPORT
-  max: 10, // max number of clients in the pool
-  idleTimeoutMillis: 30000, // how long a client is allowed to remain idle before being closed
-};
+
 
 //fix date format with timezone
 var types = pg.types;
@@ -44,21 +37,21 @@ pool.on('error', function (err, client) {
   console.error('idle client error', err.message, err.stack)
 })
 */
-
-function initDBConnection(app) {
-    var date  = new Date();
-    var ts = date.getMilliseconds();
-
-    var pool = new pg.Pool(config);
-
-
-    pool.on('error', function (err, client) {
-      console.error('idle client error', err.message, err.stack)
-    });
-
-    return pool;
-}
-function connectDB(app, conn) {
+//
+// function initDBConnection(app) {
+//     var date  = new Date();
+//     var ts = date.getMilliseconds();
+//
+//     var pool = new pg.Pool(config);
+//
+//
+//     pool.on('error', function (err, client) {
+//       console.error('idle client error', err.message, err.stack)
+//     });
+//
+//     return pool;
+// }
+function connectDB(app, conn, config) {
     if(conn) {
 
         return conn;
