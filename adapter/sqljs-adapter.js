@@ -1,6 +1,14 @@
 const sql = require('sql.js');
-
+const CP_UTIL_Map2json = require('./map2json.js')
 const container = {};
+const DEBUG = false;
+const debug = function(msg) {
+    if(DEBUG) {
+        console.log(msg)
+    }
+}
+
+module.exports.name = "sqljs"
 
 module.exports.connect = function(app) {
     container.CP_SQLJS_Schema = container.CP_SQLJS_Schema || {};
@@ -8,11 +16,15 @@ module.exports.connect = function(app) {
     return container.CP_SQLJS_Schema[app];
 }
 
+module.exports.disconnect = function(app) {
+
+}
+
 
 module.exports.runSql = function(db, sqls, succ, err) {
     try {
         for (let i = 0; i < sqls.length; i++) {
-            console.log(sqls[i])
+            //console.log(sqls[i])
             db.run(sqls[i]);
         }
         succ(true)
@@ -31,7 +43,7 @@ module.exports.execSql = function(db, sqlArg, out, callback, errorcallback) {
     for (let i = 0; i < sqls.length; i++) {
         var stmt = null;
         try {
-            console.log(sqls[i].sql)
+            debug(sqls[i].sql)
             let param = sqls[i].params ? sqls[i].params() : [];
             stmt = db.prepare(sqls[i].sql, param);
             let resultArray = [];
@@ -64,14 +76,16 @@ module.exports.execSql = function(db, sqlArg, out, callback, errorcallback) {
                 try {
                     sqls[i].result(db, results);
                 } catch (e) {
-                    console.log("error 2:" + e);
+                    debug("error 2:" + e);
                     errorcallback(e);
                     return;
                 }
             }
             if (i == sqls.length - 1) {
                 if (callback) {
-                    callback(out, results, db);
+                    var outObj = {};
+                    outObj = CP_UTIL_Map2json(out, outObj)
+                    callback(outObj, results, db);
                 }
                 stmt.free();
                 return;
@@ -79,7 +93,7 @@ module.exports.execSql = function(db, sqlArg, out, callback, errorcallback) {
 
 
         } catch (e) {
-            console.log("error 1:" + e);
+            debug("error 1:" + e);
             if (stmt != null)
                 stmt.free();
             errorcallback(e);

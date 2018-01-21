@@ -1,0 +1,12 @@
+echo "# apibaker" >> README.md
+git init
+git add README.md
+git commit -m "first commit"
+git remote add origin https://github.com/apibaker/apibaker.git
+git push -u origin master
+
+
+
+npm config set registry http://registry.npmjs.org
+
+npm config set registry https://registry.npm.taobao.org/

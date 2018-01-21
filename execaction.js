@@ -115,6 +115,8 @@ var execAction = function(input, DBCmd, succ, err, dbAdapter, conn) {
       }
     }
     else if(DBCmdObj.checkExist && !inMap[DBCmdObj.checkExist]) {
+      // console.log("exist: "+inMap)
+      // console.log("exist: "+DBCmdObj.checkExist+" "+inMap[DBCmdObj.checkExist]);
       continue;
     } else {
       var sqlparamfunc = (function(params){
@@ -197,9 +199,9 @@ var execAction = function(input, DBCmd, succ, err, dbAdapter, conn) {
           return function(tx, result) {
             var size = 0;
             if(result.rows.length>0) {
-              size = result.rows.item(0).CNT;
+              size = eval(result.rows.item(0).CNT);
             }
-            out.count = String(size);
+            out.count = (size);
             if(size==0) {
               out.data = [];
             }
@@ -228,7 +230,7 @@ var execAction = function(input, DBCmd, succ, err, dbAdapter, conn) {
 
 
 function setSQLParam (params, map) {
-
+  
   var sqlparam = new Array();
 
   for(var i=0;i<params.length;i++) {
@@ -244,6 +246,7 @@ function setSQLParam (params, map) {
       key = key.replace(/\,/g, '_');
     }
 
+    
     var pval = map[key];
 
     //      if(typeof(pval) == "undefined") {
@@ -253,13 +256,15 @@ function setSQLParam (params, map) {
       sqlparam[idx]=null;
       continue;
     } else if(["String","Text"].indexOf(type)==-1) {
-      if(pval=="") {
+ 
+      if(pval==="") {
+
         sqlparam[idx] = null;
         continue;
       }
 
     }
-
+    
     if(opt === 'Start-With') {
       sqlparam[idx]=pval+'%';
     } else if(opt === 'End-With') {
@@ -267,9 +272,10 @@ function setSQLParam (params, map) {
     } else if(opt === 'Contains') {
       sqlparam[idx]='%'+pval+'%';
     } else {
-
+      
       sqlparam[idx]=pval;
-      if(typeof(sqlparam[idx])=='undefined' || sqlparam[idx]==""){
+
+      if(typeof(sqlparam[idx])=='undefined' || sqlparam[idx]===""){
         sqlparam[idx]=null;
       } else if(["Integer","Long", "Id"].indexOf(type)!=-1) {
         sqlparam[idx]=parseInt(sqlparam[idx]);
@@ -283,10 +289,10 @@ function setSQLParam (params, map) {
       }
 
     }
+    
 
   }
-
-
+  //console.log(sqlparam)
   return sqlparam;
 
 
@@ -313,8 +319,8 @@ function setSQLResult (tx, result, rowidx, results, map, insertId, inMap, query)
       }
     }
     if(insertId) {
-      map[key] = String(result.insertIdFunc());
-      inMap[key] = String(result.insertIdFunc());
+      map[key] = result.insertIdFunc();//String(result.insertIdFunc());
+      inMap[key] = result.insertIdFunc();//String(result.insertIdFunc());
     } else if(type==="Boolean"){
       if(result.rows.item(rowidx)[itemKey]!=null && typeof(result.rows.item(rowidx)[itemKey])!='undefined') {
 
@@ -322,10 +328,10 @@ function setSQLResult (tx, result, rowidx, results, map, insertId, inMap, query)
         var val = result.rows.item(rowidx)[itemKey];
 
         if(val==1 || String(val).toUpperCase()=='TRUE') {
-          str = String(true);
+          str = (true);
           //map.set(key, String(true));
         } else {
-          str = String(false);
+          str = (false);
           //map.set(key, String(false));
 
         }
@@ -333,12 +339,12 @@ function setSQLResult (tx, result, rowidx, results, map, insertId, inMap, query)
 
       }
       //map.set(key, String(result.rows.item(rowidx)[itemKey]==1 || result.rows.item(rowidx)[itemKey].toUpperCase()=='TRUE'));
-    } else if(["Integer","Long", "Id"].indexOf(type)!=-1) {
+    } else if(["Integer","Long", "Id", "Short"].indexOf(type)!=-1) {
       if(result.rows.item(rowidx)[itemKey]!=null && typeof(result.rows.item(rowidx)[itemKey])!='undefined' && result.rows.item(rowidx)[itemKey]!='NaN')
-      map[key] = parseInt(result.rows.item(rowidx)[itemKey])+"";
+      map[key] = parseInt(result.rows.item(rowidx)[itemKey]);
     } else if(["Double","Float","Decimal"].indexOf(type)!=-1) {
       if(result.rows.item(rowidx)[itemKey]!=null && typeof(result.rows.item(rowidx)[itemKey])!='undefined' && result.rows.item(rowidx)[itemKey]!='NaN')
-      map[key] = parseFloat(result.rows.item(rowidx)[itemKey])+"";
+      map[key] = parseFloat(result.rows.item(rowidx)[itemKey]);
     } else {
       if(result.rows.item(rowidx)[itemKey]!=null && typeof(result.rows.item(rowidx)[itemKey])!='undefined')
       map[key] = String(result.rows.item(rowidx)[itemKey]);
@@ -347,9 +353,79 @@ function setSQLResult (tx, result, rowidx, results, map, insertId, inMap, query)
 
 }
 
+
+function runTest(tests, model, conn, dbAdapter, done, idx = 0, elapse = 0, result = {}) {
+
+  let actionDef = model.ActDef[tests[idx].action];
+  let action = actionDef.model;
+  let actionName = action.Name;
+  let actionType = action.Type;
+  let entName = action.Entity;
+  var refeEntName = actionDef.refeDef ? actionDef.refeDef.entDef.name : null;
+  var input = prepareInput(tests[idx].in, actionType, entName, refeEntName || null);
+
+  var st = (new Date()).getTime();
+  result.tests = result.tests || [];
+  debuglog(model.Runtime[tests[idx].action]);
+  execAction(input, model.Runtime[tests[idx].action], function (res) {
+    if (JSON.stringify(tests[idx].out) === JSON.stringify(res)) {
+      debuglog(JSON.stringify(res))
+      var et = (new Date()).getTime();
+      elapse += et - st;
+      
+      infolog(dbAdapter.name +' '+ model.raw.name+'/'+tests[idx].action+'/'+idx+ ' done! ' + (et-st) / 1000 + ' sec')
+      
+      result.tests.push({test:model.raw.name, idx:idx, action:tests[idx].action, elapse: (et-st), succ:true, expected: tests[idx].out, actual:res})   
+      
+      if (idx + 1 < tests.length) {
+        runTest(tests, model, conn, dbAdapter, done, idx + 1, elapse, result)
+      }
+      else {
+        infolog(dbAdapter.name +' '+ model.raw.name + ' done! ' + ( elapse ) / 1000 + ' sec')
+        result.all = {test:model.raw.name, elapse: elapse, succ:true}
+        if(done)
+          done(result); 
+      }
+
+    } else {
+      errlog(model.raw.name + '[' + idx + ']. expected:' + JSON.stringify(tests[idx].out) + '\n but:' + JSON.stringify(res))
+      result.tests.push({test:model.raw.name, idx:idx, action:tests[idx].action, elapse: (et-st), succ:false, expected: tests[idx].out, actual:res})   
+      result.all = {test:model.raw.name, elapse: elapse, succ:false}
+      if(done)
+          done(result); 
+    }
+    
+  }, function (err) {
+    errlog(err)
+  }, dbAdapter, conn);
+
+}
+
+
+const DEBUG = false;
+
+function debuglog(msg) {
+  if (DEBUG) {
+    console.log(msg)
+  }
+}
+
+function infolog(msg) {
+
+  console.log(msg)
+
+}
+function errlog(msg) {
+
+  console.error(msg)
+
+}
+
+
 if(typeof(module)!=="undefined" && typeof(module.exports)!=="undefined") {
   module.exports = {
     execAction:execAction,
-    prepareInput:prepareInput
+    prepareInput:prepareInput,
+    runTest:runTest
   }
 }

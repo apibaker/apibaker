@@ -1,5 +1,5 @@
 var pg = require('pg');
-
+const CP_UTIL_Map2json = require('./map2json.js')
 
 // create a config to configure both pooling behavior
 // and client options
@@ -51,7 +51,7 @@ pool.on('error', function (err, client) {
 //
 //     return pool;
 // }
-function connectDB(app, conn, config) {
+function connectDB(app, config, conn) {
     if(conn) {
 
         return conn;
@@ -66,6 +66,12 @@ function connectDB(app, conn, config) {
     return pool;
     //var client = new pg.Client(config);
     //return client;
+}
+
+ function disconnectDB(app, pool) {
+   
+    pool.end();
+    
 }
 
 function doSql(pool, sql, callback) {
@@ -145,7 +151,7 @@ function runSql(pool, sqls, callback, errorcallback) {
                     if (i < sqls.length) {
 
                             if (i == sqls.length - 1) {
-                                //console.log(sqls[i]);
+                                // console.log(sqls[i]);
                                 client.query(sqls[i], [], function(error, results) {
                                     if (error) {
                                         console.log("Error:"+sqls[i]);
@@ -161,7 +167,7 @@ function runSql(pool, sqls, callback, errorcallback) {
                                 });
                             } else {
                                 //var param = sqls[i].params ? sqls[i].params() : [];
-                                 //console.log(sqls[i]);
+                                //  console.log(sqls[i]);
                                 client.query(sqls[i], [], function(error, results) {
                                     if (error) {
                                         console.log("Error:"+sqls[i]);
@@ -260,7 +266,7 @@ function executeSql(pool, sqlArg, out, callback, errorcallback) {
                                             insertIdFunc:function() {
                                                 //console.log(res.rows);
                                                 for(var key in res.rows[0]) {
-                                                    return res.rows[0][key]
+                                                    return eval(res.rows[0][key])
                                                 }
                                               }
                                           };
@@ -276,7 +282,9 @@ function executeSql(pool, sqlArg, out, callback, errorcallback) {
                                         }
 
                                          client.query('COMMIT', function(){
-                                            callback(out, results, pool);
+                                            var outObj = {};
+                                            outObj = CP_UTIL_Map2json(out, outObj)
+                                            callback(outObj, results, pool);
                                             done();
                                          });
 
@@ -328,7 +336,7 @@ function executeSql(pool, sqlArg, out, callback, errorcallback) {
                                             insertIdFunc:function() {
                                                 //console.log(res.rows);
                                                 for(var key in res.rows[0]) {
-                                                    return res.rows[0][key]
+                                                    return eval(res.rows[0][key])
                                                 }
 
                                               }
@@ -368,5 +376,7 @@ function executeSql(pool, sqlArg, out, callback, errorcallback) {
 
 
 module.exports.connect = connectDB;
+module.exports.disconnect = disconnectDB
 module.exports.runSql = runSql;
 module.exports.execSql = executeSql;
+module.exports.name = "postgre"
