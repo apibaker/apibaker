@@ -1,6 +1,6 @@
 {
   "name": "apibaker",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "apibaker runtime javascript library",
   "main": "index.js",
   "scripts": {
