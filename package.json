@@ -1,6 +1,6 @@
 {
   "name": "apibaker",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "apibaker runtime javascript library",
   "main": "index.js",
   "scripts": {
@@ -20,6 +20,8 @@
   },
   "homepage": "https://github.com/apibaker/apibaker#readme",
   "dependencies": {
-    "pg": "^7.3.0"
+    "pg": "^7.3.0",
+    "mysql": "^2.15.0",
+    "sql.js": "^0.4.0",
   }
 }

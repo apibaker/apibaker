@@ -2,19 +2,34 @@
 const mysql = require("mysql");
 const CP_UTIL_Map2json = require('./map2json.js');
 
+var DEBUG = false;
+
+function debugLog(msg) {
+    if (DEBUG)
+        console.log(msg)
+}
+
+function errorLog(msg) {
+    console.log(msg)
+}
+
+
 function connectDB(app, config, conn) {
     if(conn) {
         return conn;
     }
-    var pool  = mysql.createPool(config);
+    var pool  = mysql.createPool(config.connectionString);
     //console.log("connection pool created!")
     return pool;
 }
 
 function disconnectDB(app, pool) {
+    
     pool.end(function (err) {
         if(err)
-        console.error(err)
+            errorLog(err)
+        else
+            debugLog("connections released!")    
     });
 }
 function runSql(pool, sqls, callback, errorcallback) {
@@ -22,7 +37,7 @@ function runSql(pool, sqls, callback, errorcallback) {
     var i = 0;
     pool.getConnection(function(err, db) {
         if(err) {
-            console.error(err)
+            errorLog(err)
         }
         function executeSql() {
         
@@ -33,14 +48,10 @@ function runSql(pool, sqls, callback, errorcallback) {
                         // console.log(sqls[i]);
                         db.query(sqls[i], [], function(error, results) {
                             if (error) {
+                                errorLog("Error Occurred. " + error);
                                 db.rollback(function() {
-                                    if (errorcallback) {
-                                        errorcallback(error);
-                                    } else {
-                                        console.log("Error Occurred. " + error);
-                                    }
                                     db.release();
-
+                                    errorcallback(error);
                                 });
                             } else {
                                 
@@ -48,12 +59,11 @@ function runSql(pool, sqls, callback, errorcallback) {
                                 db.commit(function(err) {
                                     if (err) {
                                         db.rollback(function() {
-                                            throw err;
+                                            
                                         });
                                     }
                                     i++;
-                                    if (callback) 
-                                        callback();
+                                    callback({}, results);
                                     db.release();
                                     //console.log("db released!")
                                 });
@@ -65,13 +75,10 @@ function runSql(pool, sqls, callback, errorcallback) {
                         // console.log(sqls[i] );
                         db.query(sqls[i], [], function(error, results) {
                             if (error) {
+                                errorLog("Error Occurred. " + error);
+                                i = sqls.length; //end execution
                                 db.rollback(function() {
-                                    if (errorcallback) {
-                                        errorcallback(error);
-                                    } else {
-                                        console.log("Error Occurred. " + error);
-                                    }
-                                    i = sqls.length; //end execution
+                                    errorcallback(error);
                                 });
 
                             } else {
@@ -99,20 +106,14 @@ function executeSql(pool, sqlArg, out, callback, errorcallback) {
                 db.beginTransaction(function(err) {
                     if (i == sqls.length - 1) {
                         var param = sqls[i].params ? sqls[i].params() : [];
-                        // console.log(sqls[i].sql + " " + JSON.stringify(param));
                         db.query(sqls[i].sql, param, function(error, resultArray) {
                             if (error) {
+                                errorLog("Error Occurred. " + error);
                                 db.rollback(function() {
-                                    if (errorcallback) {
-                                        errorcallback(error);
-                                    } else {
-                                        // console.log("Error Occurred. " + error);
-                                    }
-                                    console.log("Error Occurred. " + error);
-                                    db.release();
-                                    //console.log("db released!")
-
+                                    errorcallback(error);
+                                    
                                 });
+                                db.release();
                             } else {
                                 var results = {
                                     rows: {
@@ -134,40 +135,35 @@ function executeSql(pool, sqlArg, out, callback, errorcallback) {
                                     try {
                                         sqls[i].result(error, results);
                                     } catch (e) {
-                                        if (errorcallback) errorcallback(e);
+                                        errorLog(e)
+                                        errorcallback(e);
                                     }
                                 }
                                 
                                 db.commit(function(err) {
                                     if (err) {
                                         db.rollback(function() {
-                                            throw err;
+                                            
                                         });
                                     }
                                     i++;
                                     var outObj = {};
                                     outObj = CP_UTIL_Map2json(out, outObj)
-                                    if (callback) 
-                                        callback(outObj, error, results);
+                                    callback(outObj, results);
                                     db.release();
-                                    //console.log("db released!")
+                                    
                                 });
                             }
                             
                         });
                     } else {
                         var param = sqls[i].params ? sqls[i].params() : [];
-                        // console.log(sqls[i].sql + " " + JSON.stringify(param));
                         db.query(sqls[i].sql, param, function(error, resultArray) {
                             if (error) {
+                                errorLog("Error Occurred. " + error);
+                                i = sqls.length; //end execution
                                 db.rollback(function() {
-                                    if (errorcallback) {
-                                        errorcallback(error);
-                                    } else {
-                                        // console.log("Error Occurred. " + error);
-                                    }
-                                    console.log("Error Occurred. " + error);
-                                    i = sqls.length; //end execution
+                                    errorcallback(error);
                                 });
 
                             } else {
@@ -192,8 +188,8 @@ function executeSql(pool, sqlArg, out, callback, errorcallback) {
                                         sqls[i].result(error, results);
 
                                     } catch (e) {
-                                        if (errorcallback) errorcallback(e);
                                         i = sqls.length; //end execution
+                                        errorcallback(e);
                                     }
 
                                 }
