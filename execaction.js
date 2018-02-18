@@ -70,7 +70,7 @@ function CP_UTIL_Json2map(obj, map, prefixKey) {
 var execAction = function (input, DBCmd, succ, err, dbAdapter, conn, before, after) {
   let ctx = {
     input:input,
-    cmd:DBcmd,
+    cmd:DBCmd,
     conn:conn,
     adapter:dbAdapter
   }
@@ -240,7 +240,7 @@ var execAction = function (input, DBCmd, succ, err, dbAdapter, conn, before, aft
     }
    
 
-  }
+  
   dbAdapter.execSql(conn, sqlArg, out, succcallback, err);
 
 }
