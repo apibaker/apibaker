@@ -68,12 +68,12 @@ function CP_UTIL_Json2map(obj, map, prefixKey) {
 
 
 var execAction = function (input, DBCmd, succ, err, dbAdapter, conn, before, after) {
-  let ctx = [
+  let ctx = {
     input:input,
     cmd:DBcmd,
     conn:conn,
     adapter:dbAdapter
-  ]
+  }
   if (before) {
     try {
       before(input.obj, ctx)
@@ -227,14 +227,18 @@ var execAction = function (input, DBCmd, succ, err, dbAdapter, conn, before, aft
 
   var succcallback = function (res) {
 
-    if (after) {
+    
       try {
-        after(res, ctx)
+        if (after) {
+          after(res, ctx)
+        } 
         succ(res)
       } catch (e) {
-        err(e);
+        errorLog(e)
+        err(e)
       }
     }
+   
 
   }
   dbAdapter.execSql(conn, sqlArg, out, succcallback, err);
